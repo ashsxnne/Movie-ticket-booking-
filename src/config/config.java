@@ -91,8 +91,6 @@ public void addRecord(String sql, Object... values) {
     }
 
 
-
-
 //-----------------------------------------------
     // UPDATE METHOD
     //-----------------------------------------------
@@ -130,12 +128,29 @@ public void addRecord(String sql, Object... values) {
             System.out.println("Error updating record: " + e.getMessage());
         }
     }
+    
+    
 
+// Add this method in the config class
+public void deleteRecord(String sql, Object... values) {
+    try (Connection conn = this.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
+        // Loop through the values and set them in the prepared statement dynamically
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] instanceof Integer) {
+                pstmt.setInt(i + 1, (Integer) values[i]); // If the value is Integer
+            } else {
+                pstmt.setString(i + 1, values[i].toString()); // Default to String for other types
+            }
+        }
 
-
-
-
+        pstmt.executeUpdate();
+        System.out.println("Record deleted successfully!");
+    } catch (SQLException e) {
+        System.out.println("Error deleting record: " + e.getMessage());
+    }
+}
 
 
 }
