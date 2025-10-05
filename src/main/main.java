@@ -33,7 +33,7 @@ public class main {
             }
         } while (true);
     }
-   
+
     // ✅ Register
     public static void register() {
         System.out.print("Enter Name: ");
@@ -49,15 +49,7 @@ public class main {
         System.out.print("Enter choice (1-2): ");
         int roleChoice = sc.nextInt();
 
-        String role;
-        if (roleChoice == 1) {
-            role = "Customer";
-        } else if (roleChoice == 2) {
-            role = "Admin";
-        } else {
-            System.out.println("Invalid choice! Defaulting to Customer.");
-            role = "Customer";
-        }
+        String role = (roleChoice == 2) ? "Admin" : "Customer";
 
         String sql = "INSERT INTO user_table(u_name, u_email, u_pass, u_role, u_status) VALUES(?, ?, ?, ?, ?)";
         con.addRecord(sql, name, email, pass, role, "Pending");
@@ -89,12 +81,12 @@ public class main {
             return;
         }
 
-        System.out.println("✅ Login successful! Welcome " + user.get("u_name") + " (Role: " + role + ")");
+        System.out.println("✅ Login successful! Welcome " + user.get("u_name") + " (" + role + ")");
 
-        if (role.equals("Admin")) {
+        if (role.equalsIgnoreCase("Admin")) {
             adminMenu();
         } else {
-            customerMenu();
+            customerMenu(user);
         }
     }
 
@@ -104,25 +96,69 @@ public class main {
             System.out.println("\n--- ADMIN MENU ---");
             System.out.println("1. View All Users");
             System.out.println("2. Approve a Customer Account");
-            System.out.println("3. Logout");
-            System.out.print("Enter choice (1-3): ");
+            System.out.println("3. Update a User Account");
+            System.out.println("4. Delete a User Account");
+            System.out.println("5. View All Bookings");
+            System.out.println("6. Delete Bookings ");
+            System.out.println("7. Logout");
+            System.out.print("Enter choice (1-6): ");
             int ch = sc.nextInt();
 
             switch (ch) {
                 case 1:
-                    String sql = "SELECT * FROM user_table";
-                    String[] headers = {"ID", "Name", "Email", "Role", "Status"};
-                    String[] cols = {"u_id", "u_name", "u_email", "u_role", "u_status"};
-                    con.viewRecords(sql, headers, cols);
+                    String sql1 = "SELECT * FROM user_table";
+                    String[] headers1 = {"ID", "Name", "Email", "Role", "Status"};
+                    String[] cols1 = {"u_id", "u_name", "u_email", "u_role", "u_status"};
+                    con.viewRecords(sql1, headers1, cols1);
                     break;
+
                 case 2:
                     System.out.print("Enter User ID to approve: ");
                     int id = sc.nextInt();
                     String upd = "UPDATE user_table SET u_status = ? WHERE u_id = ?";
                     con.updateRecord(upd, "Approved", id);
+                    System.out.println("✅ User approved!");
                     break;
+
                 case 3:
+                    System.out.print("Enter User ID to update: ");
+                    int uid = sc.nextInt();
+                    System.out.print("Enter new name: ");
+                    String newName = sc.next();
+                    System.out.print("Enter new email: ");
+                    String newEmail = sc.next();
+                    System.out.print("Enter new role (Admin/Customer): ");
+                    String newRole = sc.next();
+                    String sqlUpdateUser = "UPDATE user_table SET u_name = ?, u_email = ?, u_role = ? WHERE u_id = ?";
+                    con.updateRecord(sqlUpdateUser, newName, newEmail, newRole, uid);
+                    System.out.println("✅ User updated!");
+                    break;
+
+                case 4:
+                    System.out.print("Enter User ID to delete: ");
+                    int del = sc.nextInt();
+                    String sqlDel = "DELETE FROM user_table WHERE u_id = ?";
+                    con.updateRecord(sqlDel, del);
+                    System.out.println("🗑️ User deleted!");
+                    break;
+
+                case 5:
+                    String view = "SELECT * FROM tbl_booking";
+                    String[] headers2 = {"Booking ID", "User ID", "Movie", "Showtime", "Seat", "Fee"};
+                    String[] cols2 = {"b_id", "u_id", "movie_name", "showtime", "seat_no", "booking_fee"};
+                    con.viewRecords(view, headers2, cols2);
+                    break;
+                    
+                case 6:
+                    System.out.println("Enter Book ID to delete: ");
+                    int dele = sc.nextInt();
+                    sqlDel = "DELETE FROM tbl_booking WHERE b_id = ?";
+                    con.updateRecord(sqlDel, dele);
+                    System.out.println("🗑️ Book ID deleted!"); 
+
+                case 7:
                     return;
+
                 default:
                     System.out.println("Invalid choice!");
             }
@@ -130,7 +166,8 @@ public class main {
     }
 
     // ✅ Customer Menu
-    public static void customerMenu() {
+    public static void customerMenu(Map<String, Object> user) {
+        int userId = Integer.parseInt(user.get("u_id").toString());
         while (true) {
             System.out.println("\n--- CUSTOMER MENU ---");
             System.out.println("1. Book Ticket");
@@ -147,18 +184,25 @@ public class main {
                     String showtime = sc.next();
                     System.out.print("Enter Seat Number: ");
                     String seat = sc.next();
+                    System.out.print("Enter Booking Fee: ");
+                    double fee = sc.nextDouble();
 
-                    String sql = "INSERT INTO tbl_booking(movie_name, showtime, seat_no) VALUES (?, ?, ?)";
-                    con.addRecord(sql, movie, showtime, seat);
+                    
+                    String sql = "INSERT INTO tbl_booking(u_id, movie_name, showtime, seat_no, booking_fee) VALUES (?, ?, ?, ?, ?)";
+                    con.addRecord(sql, userId, movie, showtime, seat, fee);
+                    System.out.println("🎟️ Ticket booked successfully!");
                     break;
-                case 2:
-                    String view = "SELECT * FROM tbl_booking";
-                    String[] headers = {"Booking ID", "Movie", "Showtime", "Seat"};
-                    String[] cols = {"b_id", "movie_name", "showtime", "seat_no"};
+
+                case 2:                   
+                    String view = "SELECT * FROM tbl_booking WHERE u_id = " + userId;
+                    String[] headers = {"Booking ID", "Movie", "Showtime", "Seat", "Fee"};
+                    String[] cols = {"u_id", "movie_name", "showtime", "seat_no", "booking_fee"};
                     con.viewRecords(view, headers, cols);
                     break;
+
                 case 3:
                     return;
+
                 default:
                     System.out.println("Invalid choice!");
             }
